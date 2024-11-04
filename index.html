@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climate Change</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .country {
+            fill: lightblue;
+            stroke: white;
+            stroke-width: 0.5px;
+            cursor: pointer;
+        }
+        .country:hover {
+            fill: steelblue;
+        }
+
+        #side-panel {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 300px;
+            height: 100%;
+            background-color: #f0f0f0;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+            padding: 20px;
+            transition: left 0.3s;
+            overflow-y: auto;
+            visibility: hidden; /* Initially hidden */
+        }
+
+        #close-btn {
+            margin-bottom: 10px;
+            cursor: pointer;
+            color: red;
+        }
+
+        .thermometer-image {
+            width: 100%;
+            max-width: 150px;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .slider-container {
+            margin-top: 20px;
+        }
+
+        .slider-label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .slider {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <svg width="960" height="600"></svg>
+
+    <!-- Side Panel -->
+    <div id="side-panel">
+        <div id="close-btn">X Close</div>
+        <h2 id="country-name">Country Info</h2>
+        <p id="country-data">Click on a country to see its data here.</p>
+
+        <!-- Thermometer Image -->
+        <img src="https://kagi.com/proxy/1850753.png?c=X2g5MS3lhjHcjXfcnBEop4g2YCbH6CaNA17x1nBoSw7QlDq1_6cCm_NzBDUS9STchOSJAsNDgWWD0gvM3tnKIoCRURS94SjZKVdvLuRjfO0%3D" 
+             alt="Thermometer Icon" class="thermometer-image">
+
+        <!-- Slider for Fossil Fuel -->
+        <div class="slider-container">
+            <label for="fossil-fuel-slider" class="slider-label">Fossil Fuel</label>
+            <input type="range" id="fossil-fuel-slider" class="slider" min="0" max="100" value="50">
+        </div>
+    </div>
+
+    <script>
+        const width = 960;
+        const height = 600;
+
+        const svg = d3.select("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        const projection = d3.geoMercator()
+            .scale(150)
+            .translate([width / 2, height / 1.5]);
+
+        const path = d3.geoPath().projection(projection);
+
+        // Load GeoJSON
+        d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson").then(data => {
+            svg.selectAll(".country")
+                .data(data.features)
+                .enter()
+                .append("path")
+                .attr("class", "country")
+                .attr("d", path)
+                .on("click", (event, d) => {
+                    const sidePanel = document.getElementById("side-panel");
+                    sidePanel.style.left = "0";
+                    sidePanel.style.visibility = "visible";
+                    // Display country data
+                    document.getElementById("country-name").textContent = d.properties.name;
+                    document.getElementById("country-data").textContent = "Fossil Fuel data about " + d.properties.name;
+                });
+        }).catch(error => {
+            console.error("Error loading the GeoJSON data: ", error);
+        });
+
+        // "Close" button
+        document.getElementById("close-btn").addEventListener("click", () => {
+            const sidePanel = document.getElementById("side-panel");
+            sidePanel.style.left = "-300px";
+            setTimeout(() => {
+                sidePanel.style.visibility = "hidden";
+            }, 300);
+        });
+    </script>
+</body>
+</html>
