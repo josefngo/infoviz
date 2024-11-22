@@ -45,15 +45,23 @@
 
         .slider-container {
             margin-top: 20px;
+            display: flex; /* Enables flexbox layout */
+            align-items: center; /* Vertically aligns the items (label, slider, and year label) */
+            justify-content: center; /* Centers the content horizontally */
         }
 
         .slider-label {
-            margin-bottom: 5px;
+            margin-right: 10px; /* Adds space between the label and the slider */
             font-weight: bold;
         }
 
         .slider {
-            width: 100%;
+            width: 50%; /* Adjust the width of the slider */
+        }
+
+        #year-label {
+            margin-left: 10px; /* Adds space between the slider and the year label */
+            font-weight: bold; /* Make the year label bold for visibility */
         }
     </style>
 </head>
@@ -85,31 +93,38 @@
     </div>
 
     <script>
-        const width = 960;
-        const height = 600;
+        // Changed these values to center map on screen
+        const width = window.innerWidth-50;
+        const height = window.innerHeight-100;
 
         const svg = d3.select("svg")
             .attr("width", width)
-            .attr("height", height);
+            .attr("height", height)
+            .attr("viewBox", `0 0 ${width} ${height}`) // Ensure the map fits within the screen;
 
         const projection = d3.geoMercator()
-            .scale(150)
-            .translate([width / 2, height / 1.5]);
+            .scale(155)
+            .translate([width/2, height/1.5]);
 
         const path = d3.geoPath().projection(projection);
 
         let temperatureData = [];
+        let carbonData = [];
 
         d3.csv("data/average_temperatures_per_year.csv").then(data => {
             temperatureData = data;
             console.log("Temperature data loaded:", temperatureData); // Log the data to the console
-            temperatureData.forEach(d => {
-                d.year = +d.year;
-                d.AverageTemperature = +d.AverageTemperature;
-            });
+          
             updateMapColors(d3.select("#year-slider").property("value"));
         }).catch(error => {
             console.error("Error loading the temperature data: ", error);
+        });
+
+        d3.csv("data/fossil-fuel-co2-emissions-by-nation.csv").then(data => {
+            carbonData = data;
+            console.log("Carbon data loaded:", carbonData); // Log the data to the console
+        }).catch(error => {
+            console.error("Error loading the carbon data: ", error);
         });
 
         // Load GeoJSON
@@ -124,6 +139,11 @@
                     const sidePanel = document.getElementById("side-panel");
                     sidePanel.style.left = "0"; 
                     sidePanel.style.visibility = "visible";
+                    // Make the selected country another color
+                    svg.selectAll(".country").style("fill", "lightblue");
+                    svg.selectAll(".country").filter(function(datum) {
+                            return datum === d; 
+                        }).style("fill", "darkblue"); 
 
                     // Display country data
                     const year = d3.select("#year-slider").property("value");
@@ -161,7 +181,7 @@
 
         // Update map colors based on selected year
         // This approach hardcodes a specific temp to a specific color value which does not properly show the changes per country
-            function updateMapColors(year) {
+        function updateMapColors(year) {
             d3.select("#year-label").text(year);
 
             svg.selectAll(".country").style("fill", function(d) {
