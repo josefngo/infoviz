@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CO2 Emissions Over Time</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.0.3/nouislider.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.0.3/nouislider.min.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        #chart-container {
+            width: 80%;
+            margin: 0 auto;
+        }
+
+        #temp-chart-container {
+            width: 80%;
+            margin: 0 auto;
+        }
+
+        #year-range-slider {
+            margin: 20px 0;
+        }
+
+        .slider-label {
+            font-weight: bold;
+        }
+
+        #year-range {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .slider-label {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Slider for Year Range -->
+    <div id="year-range-slider"></div>
+    <div id="year-range">
+        <span id="start-year-label">1750</span>
+        <span id="end-year-label">2014</span>
+    </div>
+
+    <h3>CO2 Emissions Over Time</h3>
+    <!-- CO2 Emissions Graph -->
+    <div id="chart-container">
+        <canvas id="co2-chart"></canvas>
+    </div>
+
+    <h3>Temperature changes Over Time</h3>
+    <!-- Temperature Graph -->
+    <div id="temp-chart-container">
+        <canvas id="temp-chart"></canvas>
+    </div>
+
+    <script>
+        
+        emissionsData = [];
+        tempData = [];
+
+        d3.csv("data/fossil-fuel-co2-emissions-by-nation.csv").then(data => {
+            emissionsData = data.map(d => ({
+                Country: d.Country.toUpperCase(),
+                Year: +d.Year, 
+                Total: +d.Total 
+            }));
+            console.log("Carbon data loaded:", emissionsData); // Log the data to the console
+            // Set initial graph data
+            updateChart(1750, 2020, countries_test);
+        }).catch(error => {
+            console.error("Error loading the carbon data: ", error);
+        });
+
+        d3.csv("data/average_temperatures_per_year.csv").then(data => {
+            tempData = data.map(d => ({
+                Country: d.Country.toUpperCase(),
+                Year: +d.year, 
+                Temp: d.AverageTemperature !== "" && d.AverageTemperature !== undefined && d.AverageTemperature !== null 
+                ? +d.AverageTemperature 
+                : null
+            }));
+            console.log("Temp data loaded:", tempData); // Log the data to the console
+            // Set initial graph data
+            updateChart(1750, 2020, countries_test);
+        }).catch(error => {
+            console.error("Error loading the temp data: ", error);
+        });
+
+        // Set up the charts
+        const ctx = document.getElementById('co2-chart').getContext('2d');
+        let co2Chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], // Year labels will be dynamically added
+                datasets: [{
+                    label: 'CO2 Emissions (in Mt)',
+                    data: [], // CO2 data will be dynamically added
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Year'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'CO2 Emissions (Million Tons)'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Set up the chart
+        const ctx2 = document.getElementById('temp-chart').getContext('2d');
+        let tempChart = new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: [], // Year labels will be dynamically added
+                datasets: [{
+                    label: 'Temperature in °C',
+                    data: [], // temp data will be dynamically added
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Year'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Temperature in °C'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Function to update the graph based on stwo countries
+        function updateChart(startYear, endYear, countries) {
+            // Clear existing datasets
+            co2Chart.data.datasets = [];
+            tempChart.data.datasets = [];
+
+            // Define a color scale or function to assign colors dynamically to each country
+            const colorScale = d3.scaleOrdinal(d3.schemeCategory10); // A set of 10 colors, you can expand this
+            const allYears = d3.range(startYear, endYear + 1);
+
+            // Loop through each country and create a dataset for it
+            countries.forEach((country, index) => {
+
+                // Get the co2 data
+                const co2_filteredData = emissionsData.filter(d => 
+                    d.Year >= startYear && d.Year <= endYear && d.Country === country);
+                // Create a data array where we fill missing years with null
+                const co2_countryData = allYears.map(year => {
+                    const dataForYear = co2_filteredData.find(d => d.Year === year);
+                    return dataForYear ? dataForYear.Total : null; // Use null for missing data
+                });
+                const co2_dataset = {
+                    label: country,
+                    data: co2_countryData,
+                    borderColor: colorScale(index), // Get a unique color from the scale
+                    fill: false
+                };
+
+                // Get the temp data
+                const temp_filteredData = tempData.filter(d => 
+                    d.Year >= startYear && d.Year <= endYear && d.Country === country);
+                // Create a data array where we fill missing years with null
+                const temp_countryData = allYears.map(year => {
+                    const dataForYear = temp_filteredData.find(d => d.Year === year);
+                    return dataForYear && dataForYear.Year !== null && dataForYear.Temp !== null 
+                        ? dataForYear.Temp 
+                        : null;
+                });
+
+                const temp_dataset = {
+                    label: country,
+                    data: temp_countryData,
+                    borderColor: colorScale(index), 
+                    fill: false
+                };
+
+                console.log("temp_filteredData:", temp_filteredData); // Log the data to the console
+                console.log("temp_countryData:", temp_countryData); // Log the data to the console
+
+                // Dynamically set the y-axis max value for temperature chart
+                // Get the maximum temperature directly from the filtered data
+                const tempMaxValue = Math.max(...temp_filteredData.map(d => d.Temp));
+                tempChart.options.scales.y.max = tempMaxValue * 1.5; 
+                console.log("temp_max: ", tempMaxValue);
+
+                co2Chart.data.datasets.push(co2_dataset);
+                tempChart.data.datasets.push(temp_dataset);
+            });
+
+            // Set the labels for the x-axis (Year)
+            co2Chart.data.labels = allYears;
+            tempChart.data.labels = allYears;
+
+            co2Chart.update(); 
+            tempChart.update();
+        }
+
+        countries_test = ["UNITED KINGDOM","AFGHANISTAN","GERMANY"]
+
+
+        // Initialize the noUiSlider with two handles
+        const slider = document.getElementById('year-range-slider');
+
+        noUiSlider.create(slider, {
+            start: [1750, 2020],
+            connect: true,
+            range: {
+                min: 1750,
+                max: 2020
+            },
+            step: 1,
+            format: {
+                to: function (value) {
+                    return Math.round(value);
+                },
+                from: function (value) {
+                    return Math.round(value);
+                }
+            }
+        });
+
+        // Update the graph when the slider values change
+        slider.noUiSlider.on('update', function (values, handle) {
+            const startYear = values[0];
+            const endYear = values[1];
+
+            // Update the year labels
+            document.getElementById('start-year-label').textContent = startYear;
+            document.getElementById('end-year-label').textContent = endYear;
+
+            updateChart(startYear, endYear, countries_test);
+            
+        });
+    </script>
+</body>
+</html>
