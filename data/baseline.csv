@@ -31,12 +31,12 @@ Chad,26.601
 Chile,8.512
 Colombia,24.152
 Comoros,22.833
-"Congo, Dem. Rep.",23.243
 Costa Rica,23.793
 Cote d'Ivoire,25.86
 Croatia,11.47
 Cuba,24.974999999999998
 Cyprus,18.302
+Democratic Republic of the Congo,23.243
 Denmark,8.261000000000001
 Djibouti,27.63
 Dominica,25.855
@@ -68,7 +68,7 @@ Honduras,23.799
 Hungary,11.072000000000001
 Iceland,1.053
 Indonesia,24.990999999999996
-"Iran, Islamic Rep.",17.569999999999997
+Iran,17.569999999999997
 Iraq,22.182
 Ireland,8.312000000000001
 Israel,19.313
@@ -124,13 +124,13 @@ Philippines,25.351
 Poland,8.327
 Portugal,15.017000000000001
 Qatar,27.335
+Republic of Serbia,10.985
 Romania,9.776000000000002
 Russia,-4.219
 Rwanda,18.067
 Samoa,26.464999999999996
 Saudi Arabia,25.143
 Senegal,27.96
-Serbia,10.985
 Seychelles,26.245999999999995
 Sierra Leone,25.608999999999995
 Singapore,26.793999999999997
@@ -165,7 +165,7 @@ United Arab Emirates,27.38
 Uruguay,17.067999999999998
 Uzbekistan,12.814000000000002
 Vanuatu,23.308999999999997
-"Venezuela, Rb",24.767
+Venezuela,24.767
 Vietnam,23.845
 "Yemen, Rep.",24.557999999999996
 Zambia,21.031
