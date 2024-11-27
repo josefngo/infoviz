@@ -30,7 +30,28 @@
             visibility: hidden; /* Initially hidden */
         }
 
-        #close-btn {
+        /* Side Panel on the right */
+        #side-panel-right {
+            position: fixed;
+            top: 0;
+            right: -300px; /* Start from off-screen */
+            width: 300px;
+            height: 100%;
+            background-color: #f0f0f0;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.3);
+            padding: 20px;
+            transition: right 0.3s;
+            overflow-y: auto;
+            visibility: hidden; /* Initially hidden */
+        }
+
+        #close-btn-right {
+            margin-bottom: 10px;
+            cursor: pointer;
+            color: red;
+        }
+
+        #close-btn-left {
             margin-bottom: 10px;
             cursor: pointer;
             color: red;
@@ -70,7 +91,7 @@
 
     <!-- Side Panel -->
     <div id="side-panel">
-        <div id="close-btn">X Close</div>
+        <div id="close-btn-left">X Close</div>
         <h2 id="country-name">Country Info</h2>
         <p id="country-data">Click on a country to see its data here.</p>
 
@@ -85,12 +106,25 @@
         </div>
     </div>
 
+    <!-- New side panel on the right -->
+    <div id="side-panel-right">
+        <div id="close-btn-right">X Close</div>
+        <h2 id="country-name-right">Country Info</h2>
+        <p id="country-data-right">Click on a country to see its data here.</p>
+        <!-- Additional content can be added here -->
+    </div>
+
     <!-- Year Slider -->
     <div class="slider-container">
         <label for="year-slider" class="slider-label">Year</label>
-        <input type="range" id="year-slider" class="slider" min="1743" max="2013" step="1" value="1743">
-        <span id="year-label">1743</span>
+        <input type="range" id="year-slider" class="slider" min="1901" max="2013" step="1" value="1901">
+        <span id="year-label">1901</span>
     </div>
+
+    <!-- To include another html file
+     <iframe src="co2_graph.html" width="100%" height="500px" frameborder="0"></iframe>
+      -->
+    
 
     <script>
         // Changed these values to center map on screen
@@ -109,11 +143,14 @@
         const path = d3.geoPath().projection(projection);
 
         let temperatureData = [];
-        let carbonData = [];
+        let globalTemp = [];
+        let emissionData = [];
+        let globalEmmisions = [];
 
-        d3.csv("data/average_temperatures_per_year.csv").then(data => {
+        d3.csv("data/combined_temperature_with_delta.csv").then(data => {
             temperatureData = data;
             console.log("Temperature data loaded:", temperatureData); // Log the data to the console
+            globalTemp = calcGlobalTemp(temperatureData);
           
             updateMapColors(d3.select("#year-slider").property("value"));
         }).catch(error => {
@@ -121,8 +158,15 @@
         });
 
         d3.csv("data/fossil-fuel-co2-emissions-by-nation.csv").then(data => {
-            carbonData = data;
-            console.log("Carbon data loaded:", carbonData); // Log the data to the console
+            emissionsData = data.map(d => ({
+                Country: d.Country.toUpperCase(),
+                Year: +d.Year, 
+                Total: +d.Total 
+            }));
+            console.log("Carbon data loaded:", emissionsData); // Log the data to the console
+
+            globalEmmisions = calcGlobalEmission(emissionsData);
+            
         }).catch(error => {
             console.error("Error loading the carbon data: ", error);
         });
@@ -136,9 +180,9 @@
                 .attr("class", "country")
                 .attr("d", path)
                 .on("click", (event, d) => {
-                    const sidePanel = document.getElementById("side-panel");
-                    sidePanel.style.left = "0"; 
-                    sidePanel.style.visibility = "visible";
+                    openPanel("side-panel");
+                    //openPanel("side-panel-right");
+
                     // Make the selected country another color
                     svg.selectAll(".country").style("fill", "lightblue");
                     svg.selectAll(".country").filter(function(datum) {
@@ -151,15 +195,15 @@
                     document.getElementById("country-data").textContent = "Find temperature data for " + d.properties.name;
 
                     // Get temperature data for the clicked country and selected year
-                    const countryData = temperatureData.find(row => row.Country === d.properties.name && row.year == year);
+                    const countryData = temperatureData.find(row => row.Country === d.properties.name && row.Year == year);
                     console.log("temp loaded:", countryData); // Log the data to the console
                     
                     // Check if data is available
                     if (countryData) {                        
                         // Display the first year's temperature data
                         console.log("works:");
-                        document.getElementById("country-data").textContent = "Average temperature " + year + " is " + countryData.AverageTemperature + "°C";
-                       // document.getElementById("country-data").innerHTML = `<strong>${countryData.year}:</strong> ${countryData.AverageTemperature}°C`;
+                        document.getElementById("country-data").textContent = "Average temperature " + year + " is " + countryData.Annual_Mean + "°C";
+                       // document.getElementById("country-data").innerHTML = `<strong>${countryData.year}:</strong> ${countryData.delta}°C`;
                     } else {
                         console.log("doesnt work:");
                         document.getElementById("country-data").textContent = "No temperature data available for this country.";
@@ -171,12 +215,17 @@
         });
 
         // "Close" button
-        document.getElementById("close-btn").addEventListener("click", () => {
-            const sidePanel = document.getElementById("side-panel");
-            sidePanel.style.left = "-300px";
-            setTimeout(() => {
-                sidePanel.style.visibility = "hidden";
-            }, 300);
+        document.getElementById("close-btn-left").addEventListener("click", () => {
+            closePanel("side-panel");
+        });
+        document.getElementById("close-btn-right").addEventListener("click", () => {
+            closePanel("side-panel-right");
+        });
+
+        // Year slider interaction
+        d3.select("#year-slider").on("input", function() {
+            const year = this.value;
+            updateMapColors(year);
         });
 
         // Update map colors based on selected year
@@ -185,21 +234,62 @@
             d3.select("#year-label").text(year);
 
             svg.selectAll(".country").style("fill", function(d) {
-                const countryData = temperatureData.find(row => row.Country === d.properties.name && row.year == year);
+                const countryData = temperatureData.find(row => row.Country === d.properties.name && row.Year == year);
                 if (countryData) {
                     // Scale temperature to color
-                    const colorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 40]);
-                    return colorScale(countryData.AverageTemperature);
+                    const colorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([-0.5, 2]);
+                    return colorScale(countryData.delta);
                 }
                 return "lightblue";  // Default color if no data
             });
         }
 
-        // Year slider interaction
-        d3.select("#year-slider").on("input", function() {
-            const year = this.value;
-            updateMapColors(year);
-        });
+        // Open the selected panel
+        function openPanel(panel_id) {
+            const sidePanel = document.getElementById(panel_id);
+            if(panel_id=="side-panel-right"){
+                sidePanel.style.right = "0";
+            }else{
+                sidePanel.style.left = "0"; 
+            }
+            sidePanel.style.visibility = "visible";
+        }
+
+        // Close the selected panel
+        function closePanel(panel_id) {
+                const sidePanel = document.getElementById(panel_id);
+                sidePanel.style.right = "-300px";  // Move it off-screen
+                setTimeout(() => {
+                    sidePanel.style.visibility = "hidden";
+                }, 300);
+        }
+
+        function calcGlobalTemp(data){
+            // Group data by year
+            data.forEach(d => {
+                d.delta = +d.delta; 
+            });
+            const groupedByYear = d3.group(data, d => d.Year);
+
+            // Calculate the yearly global temperature
+            const yearlyGlobalTemperature = Array.from(groupedByYear, ([year, records]) => {
+                const avgTemp = d3.mean(records, d => d.delta);
+                return { year, averageGlobalTemperature: avgTemp };
+            });
+            return yearlyGlobalTemperature;
+        }
+
+        function calcGlobalEmission(data){
+            // Group data by year
+            const groupedByYear = d3.group(data, d => d.Year);
+
+            // Calculate the yearly global temperature
+            const yearlyGlobalEmission = Array.from(groupedByYear, ([Year, records]) => {
+                const avgEmm = d3.mean(records, d => d.Total);
+                return { Year, averageGlobalEmission: avgEmm};
+            });
+            return yearlyGlobalEmission;
+        }
 
     </script>
 </body>
