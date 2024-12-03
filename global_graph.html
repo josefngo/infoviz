@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global temperature and CO2 emission Chart</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <canvas id="temperatureCO2Chart" width="800" height="400"></canvas>
+    <script>
+
+        let temperatureData = [];
+        let globalTemp = [];
+        let emissionData = [];
+        let globalEmmisions = [];
+
+        d3.csv("data/combined_temperature_with_delta.csv").then(data => {
+            temperatureData = data.map(d => ({
+                    Country: d.Country,
+                    Year: +d.Year, 
+                    Annual_Mean: d.Annual_Mean,
+                    delta: d.delta 
+                }));
+            globalTemp = calcGlobalTemp(temperatureData);
+
+            d3.csv("data/fossil-fuel-co2-emissions-by-nation.csv").then(data => {
+                emissionsData = data.map(d => ({
+                    Country: d.Country.toUpperCase(),
+                    Year: +d.Year, 
+                    Total: +d.Total 
+                }));
+
+                globalEmmisions = calcGlobalEmission(emissionsData);
+                createGraph();
+                
+            }).catch(error => {
+                console.error("Error loading the carbon data: ", error);
+            });
+
+        }).catch(error => {
+            console.error("Error loading the temperature data: ", error);
+        });
+
+        function createGraph(){
+            // Extract years, temperature, and CO2 data
+            const years = d3.range(1865, 2015); 
+
+            // Map temperatures and CO2 emissions to the full range of years
+            const temperatures = years.map(year => {
+                const record = globalTemp.find(d => d.Year === year);
+                return record ? record.averageGlobalTemperature : null; // Null for missing years
+            });
+
+            const co2Values = years.map(year => {
+                const record = globalEmmisions.find(d => d.Year === year);
+                return record ? record.averageGlobalEmission : null; // Null for missing years
+            });
+
+            // Chart.js configuration
+            const ctx = document.getElementById('temperatureCO2Chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: years, // X-axis: years
+                    datasets: [
+                        {
+                            label: 'Temperature (°C)',
+                            data: temperatures,
+                            borderColor: 'rgba(255, 99, 132, 1)', // Line color
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)', // Fill color (optional)
+                            yAxisID: 'y' // Left y-axis
+                        },
+                        {
+                            label: 'CO2 Emissions (Mt)',
+                            data: co2Values,
+                            borderColor: 'rgba(54, 162, 235, 1)', // Line color
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)', // Fill color (optional)
+                            yAxisID: 'y1' // Right y-axis
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    stacked: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Global Mean Temperature (°C)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Global CO2 Emissions (Million Tons)'
+                            },
+                            grid: {
+                                drawOnChartArea: false // Avoid gridline overlap
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function calcGlobalTemp(data){
+            // Group data by year
+            data.forEach(d => {
+                d.delta = +d.delta; 
+            });
+            const groupedByYear = d3.group(data, d => d.Year);
+
+            // Calculate the yearly global temperature
+            const yearlyGlobalTemperature = Array.from(groupedByYear, ([Year, records]) => {
+                const avgTemp = d3.mean(records, d => d.delta);
+                return { Year, averageGlobalTemperature: avgTemp };
+            });
+            return yearlyGlobalTemperature;
+        }
+
+        function calcGlobalEmission_mean(data){
+            // Group data by year
+            const groupedByYear = d3.group(data, d => d.Year);
+
+            // Calculate the yearly global temperature
+            const yearlyGlobalEmission = Array.from(groupedByYear, ([Year, records]) => {
+                const avgEmm = d3.mean(records, d => d.Total);
+                return { Year, averageGlobalEmission: avgEmm};
+            });
+            return yearlyGlobalEmission;
+        }
+
+        function calcGlobalEmission(data){
+            // Group data by year
+            const groupedByYear = d3.group(data, d => d.Year);
+
+            // Calculate the yearly global temperature
+            const yearlyGlobalEmission = Array.from(groupedByYear, ([Year, records]) => {
+                const avgEmm = d3.sum(records, d => d.Total);
+                return { Year, averageGlobalEmission: avgEmm};
+            });
+
+
+            return yearlyGlobalEmission;
+        }
+
+    </script>
+</body>
+</html>
