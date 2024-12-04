@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Climate Change</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .country {
             fill: lightblue;
@@ -34,21 +35,37 @@
         #side-panel-right {
             position: fixed;
             top: 0;
-            right: -300px; /* Start from off-screen */
+            right: 0px; 
             width: 300px;
-            height: 100%;
-            background-color: #f0f0f0;
+            height: 35%;
             box-shadow: -2px 0 5px rgba(0,0,0,0.3);
-            padding: 20px;
-            transition: right 0.3s;
+            padding: 0px;
             overflow-y: auto;
-            visibility: hidden; /* Initially hidden */
+            transform: scale(1); 
+            transition: transform 0.3s ease; 
         }
 
         #close-btn-right {
             margin-bottom: 10px;
             cursor: pointer;
             color: red;
+            visibility: hidden;
+        }
+
+        #chart-container-global {
+            /*width: 100%;*/
+            background-color: #f0f0f0;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center content horizontally */
+            justify-content: center; /* Center content vertically */
+        }
+
+        /* Chart styling */
+        #temperatureCO2Chart {
+            width: 100%; /* Allow canvas to scale */
+            height: auto; /* Maintain aspect ratio */
         }
 
         #close-btn-left {
@@ -84,6 +101,23 @@
             margin-left: 10px; /* Adds space between the slider and the year label */
             font-weight: bold; /* Make the year label bold for visibility */
         }
+
+        /* Enlarged panel */
+        .zoomed {
+            transform: scale(1.2); /* Enlarge panel */
+        }
+
+        /* Overlay to detect clicks outside the panel */
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent; /* Invisible background */
+            z-index: 999; /* Just below the panel */
+            display: none; /* Initially hidden */
+        }
     </style>
 </head>
 <body>
@@ -109,9 +143,12 @@
     <!-- New side panel on the right -->
     <div id="side-panel-right">
         <div id="close-btn-right">X Close</div>
-        <h2 id="country-name-right">Country Info</h2>
-        <p id="country-data-right">Click on a country to see its data here.</p>
-        <!-- Additional content can be added here -->
+        <!-- Global Graph -->
+        <div id="chart-container-global">
+            <h4>Global Temperature vs CO2 Emissions</h4>
+            <canvas id="temperatureCO2Chart" width="900" height="600"></canvas>
+            <script type="module" src="global_chart.js"></script>
+        </div>
     </div>
 
     <!-- Year Slider -->
@@ -120,11 +157,6 @@
         <input type="range" id="year-slider" class="slider" min="1901" max="2013" step="1" value="1901">
         <span id="year-label">1901</span>
     </div>
-
-    <!-- To include another html file
-     <iframe src="co2_graph.html" width="100%" height="500px" frameborder="0"></iframe>
-      -->
-    
 
     <script>
         // Changed these values to center map on screen
@@ -148,10 +180,15 @@
         let globalEmmisions = [];
 
         d3.csv("data/combined_temperature_with_delta.csv").then(data => {
-            temperatureData = data;
+            temperatureData = data.map(d => ({
+                    Country: d.Country,
+                    Year: +d.Year, 
+                    Annual_Mean: d.Annual_Mean,
+                    delta: d.delta 
+            }));
             console.log("Temperature data loaded:", temperatureData); // Log the data to the console
             globalTemp = calcGlobalTemp(temperatureData);
-          
+            //console.log("Global Temp data loaded:", globalTemp); // Log the data to the console  
             updateMapColors(d3.select("#year-slider").property("value"));
         }).catch(error => {
             console.error("Error loading the temperature data: ", error);
@@ -164,9 +201,8 @@
                 Total: +d.Total 
             }));
             console.log("Carbon data loaded:", emissionsData); // Log the data to the console
-
             globalEmmisions = calcGlobalEmission(emissionsData);
-            
+            //console.log("Global Carbon data loaded:", globalEmmisions); // Log the data to the console
         }).catch(error => {
             console.error("Error loading the carbon data: ", error);
         });
@@ -219,7 +255,21 @@
             closePanel("side-panel");
         });
         document.getElementById("close-btn-right").addEventListener("click", () => {
-            closePanel("side-panel-right");
+            console.log("Pressed right close button");
+            const close = document.getElementById('close-btn-right');
+            close.style.visibility = "hidden";
+            const panel = document.getElementById('side-panel-right');
+            panel.style.width = '300px'; 
+            panel.style.height = '35%'; 
+        });
+
+        document.getElementById('chart-container-global').addEventListener('click', () => {
+            console.log("Pressed chart-container-global");
+            const panel = document.getElementById('side-panel-right');
+            const close = document.getElementById('close-btn-right');
+            close.style.visibility = "visible";
+            panel.style.width = '70%'; 
+            panel.style.height = '100%'; 
         });
 
         // Year slider interaction
@@ -229,7 +279,6 @@
         });
 
         // Update map colors based on selected year
-        // This approach hardcodes a specific temp to a specific color value which does not properly show the changes per country
         function updateMapColors(year) {
             d3.select("#year-label").text(year);
 
@@ -237,7 +286,7 @@
                 const countryData = temperatureData.find(row => row.Country === d.properties.name && row.Year == year);
                 if (countryData) {
                     // Scale temperature to color
-                    const colorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([-0.5, 2]);
+                    const colorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([-0.5, 1.5]);
                     return colorScale(countryData.delta);
                 }
                 return "lightblue";  // Default color if no data
@@ -264,28 +313,21 @@
                 }, 300);
         }
 
+        // Calculate the yearly mean global temperature
         function calcGlobalTemp(data){
-            // Group data by year
-            data.forEach(d => {
-                d.delta = +d.delta; 
-            });
             const groupedByYear = d3.group(data, d => d.Year);
-
-            // Calculate the yearly global temperature
-            const yearlyGlobalTemperature = Array.from(groupedByYear, ([year, records]) => {
+            const yearlyGlobalTemperature = Array.from(groupedByYear, ([Year, records]) => {
                 const avgTemp = d3.mean(records, d => d.delta);
-                return { year, averageGlobalTemperature: avgTemp };
+                return { Year, averageGlobalTemperature: avgTemp };
             });
             return yearlyGlobalTemperature;
         }
 
+        // Calculate the yearly global emissions
         function calcGlobalEmission(data){
-            // Group data by year
             const groupedByYear = d3.group(data, d => d.Year);
-
-            // Calculate the yearly global temperature
             const yearlyGlobalEmission = Array.from(groupedByYear, ([Year, records]) => {
-                const avgEmm = d3.mean(records, d => d.Total);
+                const avgEmm = d3.sum(records, d => d.Total); // Change sum to mean for the mean global emissions
                 return { Year, averageGlobalEmission: avgEmm};
             });
             return yearlyGlobalEmission;
