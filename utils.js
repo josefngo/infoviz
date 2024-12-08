@@ -1,4 +1,3 @@
-
 export function fetchData() {
     return Promise.all([
         d3.csv("data/combined_temperature_with_delta.csv").then(data =>

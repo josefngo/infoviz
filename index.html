@@ -1,338 +1,100 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Climate Change</title>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        .country {
-            fill: lightblue;
-            stroke: white;
-            stroke-width: 0.5px;
-            cursor: pointer;
-        }
-        .country:hover {
-            fill: steelblue;
-        }
-
-        #side-panel {
-            position: fixed;
-            top: 0;
-            left: -300px;
-            width: 300px;
-            height: 100%;
-            background-color: #f0f0f0;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.3);
-            padding: 20px;
-            transition: left 0.3s;
-            overflow-y: auto;
-            visibility: hidden; /* Initially hidden */
-        }
-
-        /* Side Panel on the right */
-        #side-panel-right {
-            position: fixed;
-            top: 0;
-            right: 0px; 
-            width: 300px;
-            height: 35%;
-            box-shadow: -2px 0 5px rgba(0,0,0,0.3);
-            padding: 0px;
-            overflow-y: auto;
-            transform: scale(1); 
-            transition: transform 0.3s ease; 
-        }
-
-        #close-btn-right {
-            margin-bottom: 10px;
-            cursor: pointer;
-            color: red;
-            visibility: hidden;
-        }
-
-        #chart-container-global {
-            /*width: 100%;*/
-            background-color: #f0f0f0;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center; /* Center content horizontally */
-            justify-content: center; /* Center content vertically */
-        }
-
-        /* Chart styling */
-        #temperatureCO2Chart {
-            width: 100%; /* Allow canvas to scale */
-            height: auto; /* Maintain aspect ratio */
-        }
-
-        #close-btn-left {
-            margin-bottom: 10px;
-            cursor: pointer;
-            color: red;
-        }
-
-        .thermometer-image {
-            width: 100%;
-            max-width: 150px;
-            margin: 20px auto;
-            display: block;
-        }
-
-        .slider-container {
-            margin-top: 20px;
-            display: flex; /* Enables flexbox layout */
-            align-items: center; /* Vertically aligns the items (label, slider, and year label) */
-            justify-content: center; /* Centers the content horizontally */
-        }
-
-        .slider-label {
-            margin-right: 10px; /* Adds space between the label and the slider */
-            font-weight: bold;
-        }
-
-        .slider {
-            width: 50%; /* Adjust the width of the slider */
-        }
-
-        #year-label {
-            margin-left: 10px; /* Adds space between the slider and the year label */
-            font-weight: bold; /* Make the year label bold for visibility */
-        }
-
-        /* Enlarged panel */
-        .zoomed {
-            transform: scale(1.2); /* Enlarge panel */
-        }
-
-        /* Overlay to detect clicks outside the panel */
-        #overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: transparent; /* Invisible background */
-            z-index: 999; /* Just below the panel */
-            display: none; /* Initially hidden */
-        }
-    </style>
+  <title>Climate Change Visualization</title>
+  <!-- Styles -->
+  <link href="stylesheet.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 </head>
-<body>
-    <svg width="960" height="600"></svg>
 
-    <!-- Side Panel -->
-    <div id="side-panel">
-        <div id="close-btn-left">X Close</div>
-        <h2 id="country-name">Country Info</h2>
-        <p id="country-data">Click on a country to see its data here.</p>
-
-        <!-- Thermometer Image -->
-        <img src="https://kagi.com/proxy/1850753.png?c=X2g5MS3lhjHcjXfcnBEop4g2YCbH6CaNA17x1nBoSw7QlDq1_6cCm_NzBDUS9STchOSJAsNDgWWD0gvM3tnKIoCRURS94SjZKVdvLuRjfO0%3D" 
-             alt="Thermometer Icon" class="thermometer-image">
-
-        <!-- Slider for Fossil Fuel -->
-        <div class="slider-container">
-            <label for="fossil-fuel-slider" class="slider-label">Fossil Fuel</label>
-            <input type="range" id="fossil-fuel-slider" class="slider" min="0" max="100" value="50">
-        </div>
+<body class="bg-light">
+  <nav class="navbar bg-dark navbar-expand-lg">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="." style="color: white">Climate Change Visualization</a>
     </div>
-
-    <!-- New side panel on the right -->
-    <div id="side-panel-right">
-        <div id="close-btn-right">X Close</div>
-        <!-- Global Graph -->
-        <div id="chart-container-global">
+  </nav>
+  <div class="container-fluid bg-light">
+    <div class="row">
+      <div id="mapContainer" class="col-8">
+        <div class="centered-flex">
+          <div id="canvasMap"></div>
+          <input type="range" value="0" class="slider" id="yearSlider" />
+          <button id="play-button" class="btn btn-outline-dark shadow-none">Pause</button>
+        </div>
+      </div>
+      <div id="chartContainer" class="col-4 centered-flex">
+        <div class="row" style="margin-top: 10%">
+          <div id="co2Graph" class="col-12">
             <h4>Global Temperature vs CO2 Emissions</h4>
-            <canvas id="temperatureCO2Chart" width="900" height="600"></canvas>
+            <canvas id="temperatureCO2Chart" width="400" height="200"></canvas>
             <script type="module" src="global_chart.js"></script>
+          </div>
+          <div id="radiusChart" class="col-12" style="margin-top: 5%"></div>
         </div>
+      </div>
     </div>
-
-    <!-- Year Slider -->
-    <div class="slider-container">
-        <label for="year-slider" class="slider-label">Year</label>
-        <input type="range" id="year-slider" class="slider" min="1901" max="2013" step="1" value="1901">
-        <span id="year-label">1901</span>
-    </div>
-
-    <script>
-        // Changed these values to center map on screen
-        const width = window.innerWidth-50;
-        const height = window.innerHeight-100;
-
-        const svg = d3.select("svg")
-            .attr("width", width)
-            .attr("height", height)
-            .attr("viewBox", `0 0 ${width} ${height}`) // Ensure the map fits within the screen;
-
-        const projection = d3.geoMercator()
-            .scale(155)
-            .translate([width/2, height/1.5]);
-
-        const path = d3.geoPath().projection(projection);
-
-        let temperatureData = [];
-        let globalTemp = [];
-        let emissionData = [];
-        let globalEmmisions = [];
-
-        d3.csv("data/combined_temperature_with_delta.csv").then(data => {
-            temperatureData = data.map(d => ({
-                    Country: d.Country,
-                    Year: +d.Year, 
-                    Annual_Mean: d.Annual_Mean,
-                    delta: d.delta 
-            }));
-            console.log("Temperature data loaded:", temperatureData); // Log the data to the console
-            globalTemp = calcGlobalTemp(temperatureData);
-            //console.log("Global Temp data loaded:", globalTemp); // Log the data to the console  
-            updateMapColors(d3.select("#year-slider").property("value"));
-        }).catch(error => {
-            console.error("Error loading the temperature data: ", error);
-        });
-
-        d3.csv("data/fossil-fuel-co2-emissions-by-nation.csv").then(data => {
-            emissionsData = data.map(d => ({
-                Country: d.Country.toUpperCase(),
-                Year: +d.Year, 
-                Total: +d.Total 
-            }));
-            console.log("Carbon data loaded:", emissionsData); // Log the data to the console
-            globalEmmisions = calcGlobalEmission(emissionsData);
-            //console.log("Global Carbon data loaded:", globalEmmisions); // Log the data to the console
-        }).catch(error => {
-            console.error("Error loading the carbon data: ", error);
-        });
-
-        // Load GeoJSON
-        d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson").then(data => {
-            svg.selectAll(".country")
-                .data(data.features)
-                .enter()
-                .append("path")
-                .attr("class", "country")
-                .attr("d", path)
-                .on("click", (event, d) => {
-                    openPanel("side-panel");
-                    //openPanel("side-panel-right");
-
-                    // Make the selected country another color
-                    svg.selectAll(".country").style("fill", "lightblue");
-                    svg.selectAll(".country").filter(function(datum) {
-                            return datum === d; 
-                        }).style("fill", "darkblue"); 
-
-                    // Display country data
-                    const year = d3.select("#year-slider").property("value");
-                    document.getElementById("country-name").textContent = d.properties.name;
-                    document.getElementById("country-data").textContent = "Find temperature data for " + d.properties.name;
-
-                    // Get temperature data for the clicked country and selected year
-                    const countryData = temperatureData.find(row => row.Country === d.properties.name && row.Year == year);
-                    console.log("temp loaded:", countryData); // Log the data to the console
-                    
-                    // Check if data is available
-                    if (countryData) {                        
-                        // Display the first year's temperature data
-                        console.log("works:");
-                        document.getElementById("country-data").textContent = "Average temperature " + year + " is " + countryData.Annual_Mean + "°C";
-                       // document.getElementById("country-data").innerHTML = `<strong>${countryData.year}:</strong> ${countryData.delta}°C`;
-                    } else {
-                        console.log("doesnt work:");
-                        document.getElementById("country-data").textContent = "No temperature data available for this country.";
-                    }
-
-                });
-        }).catch(error => {
-            console.error("Error loading the GeoJSON data: ", error);
-        });
-
-        // "Close" button
-        document.getElementById("close-btn-left").addEventListener("click", () => {
-            closePanel("side-panel");
-        });
-        document.getElementById("close-btn-right").addEventListener("click", () => {
-            console.log("Pressed right close button");
-            const close = document.getElementById('close-btn-right');
-            close.style.visibility = "hidden";
-            const panel = document.getElementById('side-panel-right');
-            panel.style.width = '300px'; 
-            panel.style.height = '35%'; 
-        });
-
-        document.getElementById('chart-container-global').addEventListener('click', () => {
-            console.log("Pressed chart-container-global");
-            const panel = document.getElementById('side-panel-right');
-            const close = document.getElementById('close-btn-right');
-            close.style.visibility = "visible";
-            panel.style.width = '70%'; 
-            panel.style.height = '100%'; 
-        });
-
-        // Year slider interaction
-        d3.select("#year-slider").on("input", function() {
-            const year = this.value;
-            updateMapColors(year);
-        });
-
-        // Update map colors based on selected year
-        function updateMapColors(year) {
-            d3.select("#year-label").text(year);
-
-            svg.selectAll(".country").style("fill", function(d) {
-                const countryData = temperatureData.find(row => row.Country === d.properties.name && row.Year == year);
-                if (countryData) {
-                    // Scale temperature to color
-                    const colorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([-0.5, 1.5]);
-                    return colorScale(countryData.delta);
-                }
-                return "lightblue";  // Default color if no data
-            });
-        }
-
-        // Open the selected panel
-        function openPanel(panel_id) {
-            const sidePanel = document.getElementById(panel_id);
-            if(panel_id=="side-panel-right"){
-                sidePanel.style.right = "0";
-            }else{
-                sidePanel.style.left = "0"; 
-            }
-            sidePanel.style.visibility = "visible";
-        }
-
-        // Close the selected panel
-        function closePanel(panel_id) {
-                const sidePanel = document.getElementById(panel_id);
-                sidePanel.style.right = "-300px";  // Move it off-screen
-                setTimeout(() => {
-                    sidePanel.style.visibility = "hidden";
-                }, 300);
-        }
-
-        // Calculate the yearly mean global temperature
-        function calcGlobalTemp(data){
-            const groupedByYear = d3.group(data, d => d.Year);
-            const yearlyGlobalTemperature = Array.from(groupedByYear, ([Year, records]) => {
-                const avgTemp = d3.mean(records, d => d.delta);
-                return { Year, averageGlobalTemperature: avgTemp };
-            });
-            return yearlyGlobalTemperature;
-        }
-
-        // Calculate the yearly global emissions
-        function calcGlobalEmission(data){
-            const groupedByYear = d3.group(data, d => d.Year);
-            const yearlyGlobalEmission = Array.from(groupedByYear, ([Year, records]) => {
-                const avgEmm = d3.sum(records, d => d.Total); // Change sum to mean for the mean global emissions
-                return { Year, averageGlobalEmission: avgEmm};
-            });
-            return yearlyGlobalEmission;
-        }
-
-    </script>
+  </div>
+  <div class="tooltip" style="opacity: 0"></div>
 </body>
+<script src="d3.js"></script>
+<script src="https://d3js.org/d3-geo-projection.v3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script type="module" src="./index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  let temperatureData = [];
+  let globalTemp = [];
+  let emissionData = [];
+  let globalEmmisions = [];
+
+  d3.csv("data/combined_temperature_with_delta.csv").then(data => {
+    temperatureData = data.map(d => ({
+      Country: d.Country,
+      Year: +d.Year,
+      Annual_Mean: d.Annual_Mean,
+      delta: d.delta
+    }));
+    console.log("Temperature data loaded:", temperatureData); // Log the data to the console
+    globalTemp = calcGlobalTemp(temperatureData);
+    //console.log("Global Temp data loaded:", globalTemp); // Log the data to the console  
+    // updateMapColors(d3.select("#year-slider").property("value"));
+  }).catch(error => {
+    console.error("Error loading the temperature data: ", error);
+  });
+
+  d3.csv("data/fossil-fuel-co2-emissions-by-nation.csv").then(data => {
+    emissionsData = data.map(d => ({
+      Country: d.Country.toUpperCase(),
+      Year: +d.Year,
+      Total: +d.Total
+    }));
+    console.log("Carbon data loaded:", emissionsData); // Log the data to the console
+    globalEmmisions = calcGlobalEmission(emissionsData);
+    //console.log("Global Carbon data loaded:", globalEmmisions); // Log the data to the console
+  }).catch(error => {
+    console.error("Error loading the carbon data: ", error);
+  });
+
+  // Calculate the yearly mean global temperature
+  function calcGlobalTemp(data) {
+    const groupedByYear = d3.group(data, d => d.Year);
+    const yearlyGlobalTemperature = Array.from(groupedByYear, ([Year, records]) => {
+      const avgTemp = d3.mean(records, d => d.delta);
+      return { Year, averageGlobalTemperature: avgTemp };
+    });
+    return yearlyGlobalTemperature;
+  }
+
+  // Calculate the yearly global emissions
+  function calcGlobalEmission(data) {
+    const groupedByYear = d3.group(data, d => d.Year);
+    const yearlyGlobalEmission = Array.from(groupedByYear, ([Year, records]) => {
+      const avgEmm = d3.sum(records, d => d.Total); // Change sum to mean for the mean global emissions
+      return { Year, averageGlobalEmission: avgEmm };
+    });
+    return yearlyGlobalEmission;
+  }
+</script>
+
 </html>
