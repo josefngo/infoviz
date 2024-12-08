@@ -1,4 +1,3 @@
-import * as canvasMap from "./canvasMap.js";
 import * as radiusChart from "./radiusChart.js";
 
 const monthNames = [
@@ -30,7 +29,6 @@ slider.max = end;
 
 // Init charts
 radiusChart.initChart("#radiusChart");
-canvasMap.initChart("#canvasMap");
 
 // Datasets to load
 const dataPromises = [
@@ -71,7 +69,6 @@ Promise.all(dataPromises).then(function (data) {
     const yearData = tempData.get(String(year));
     const countryData = yearData.get(country);
     radiusChart.updateChart(anomalyData, year);
-    canvasMap.updateChart(topoData, yearData, month);
     console.log("year:",year);
     updateMapColors(year);
   }
