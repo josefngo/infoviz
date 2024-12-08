@@ -205,14 +205,12 @@
                     fill: false
                 };
 
-                console.log("temp_filteredData:", temp_filteredData); // Log the data to the console
-                console.log("temp_countryData:", temp_countryData); // Log the data to the console
-
                 // Dynamically set the y-axis max value for temperature chart
                 // Get the maximum temperature directly from the filtered data
                 const tempMaxValue = Math.max(...temp_filteredData.map(d => d.Temp));
                 tempChart.options.scales.y.max = tempMaxValue * 1.5; 
-                console.log("temp_max: ", tempMaxValue);
+
+                console.log("graph data: ", co2_dataset);
 
                 co2Chart.data.datasets.push(co2_dataset);
                 tempChart.data.datasets.push(temp_dataset);

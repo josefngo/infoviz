@@ -65,3 +65,44 @@ function createGraph(globalTemp, globalEmissions) {
         },
     });
 }
+
+// Year slider interaction
+d3.select("#year-slider").on("input", function() {
+    const year = this.value;
+    updateMapColors(year);
+});
+
+// Update map colors based on selected year
+function updateMapColors(year) {
+    d3.select("#year-label").text(year);
+
+    svg.selectAll(".country").style("fill", function(d) {
+        const countryData = temperatureData.find(row => row.Country === d.properties.name && row.Year == year);
+        if (countryData) {
+            // Scale temperature to color
+            const colorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([-0.5, 1.5]);
+            return colorScale(countryData.delta);
+        }
+        return "lightblue";  // Default color if no data
+    });
+}
+
+// Open the selected panel
+function openPanel(panel_id) {
+    const sidePanel = document.getElementById(panel_id);
+    if(panel_id=="side-panel-right"){
+        sidePanel.style.right = "0";
+    }else{
+        sidePanel.style.left = "0"; 
+    }
+    sidePanel.style.visibility = "visible";
+}
+
+// Close the selected panel
+function closePanel(panel_id) {
+        const sidePanel = document.getElementById(panel_id);
+        sidePanel.style.right = "-300px";  // Move it off-screen
+        setTimeout(() => {
+            sidePanel.style.visibility = "hidden";
+        }, 300);
+}

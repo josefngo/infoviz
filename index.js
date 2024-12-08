@@ -23,7 +23,8 @@ let year = start;
 let month = 0;
 
 // Init slider variables
-const slider = document.getElementById("yearSlider");
+//const slider = document.getElementById("yearSlider");
+const slider = document.getElementById("year-slider");
 slider.min = start;
 slider.max = end;
 
@@ -37,6 +38,20 @@ const dataPromises = [
   d3.csv("data/HadCRUT4.csv"),
   d3.json("data/world.geo.json"),
 ];
+
+function updateMapColors(year) {
+  d3.select("#year-label").text(year);
+
+  svg.selectAll(".country").style("fill", function(d) {
+      const countryData = temperatureData.find(row => row.Country === d.properties.name && row.Year == year);
+      if (countryData) {
+          // Scale temperature to color
+          const colorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([-0.5, 1.5]);
+          return colorScale(countryData.delta);
+      }
+      return "lightblue";  // Default color if no data
+  });
+}
 
 // Load datasets and start visualization
 Promise.all(dataPromises).then(function (data) {
@@ -57,6 +72,8 @@ Promise.all(dataPromises).then(function (data) {
     const countryData = yearData.get(country);
     radiusChart.updateChart(anomalyData, year);
     canvasMap.updateChart(topoData, yearData, month);
+    console.log("year:",year);
+    updateMapColors(year);
   }
   updateCharts();
 
@@ -133,4 +150,8 @@ Promise.all(dataPromises).then(function (data) {
       updateCharts();
     })
   );
+
+
 });
+
+
