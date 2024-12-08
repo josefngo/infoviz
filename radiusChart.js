@@ -63,7 +63,7 @@ function initChart(canvasElement) {
     .append("text")
     .attr("dy", HEIGHT / 2)
     .attr("text-anchor", "middle")
-    .text("World Temperature Anomaly");
+    .text("Global Temperature Anomaly");
 
   // Add axes
   //Wrapper for the bars and to position it downward
